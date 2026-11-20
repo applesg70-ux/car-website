@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automarin World Cars</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="restricted-overlay" style="display:none;position:fixed;inset:0;background:#0f172a;z-index:99998;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;">
+    <h1 style="color:#ef4444;font-size:2rem;">Your account has been Restricted</h1>
+    <p style="color:#e2e8f0;font-size:1.1rem;max-width:480px;margin:1rem 0;">Contact customer support using the chat button. We will review your case.</p>
+    <p id="restriction-detail" style="color:#f59e0b;"></p>
+  </div>
+
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">Automarin World Cars</div>
+      <ul class="nav-menu">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#stages">Stages</a></li>
+        <li><a href="#cars">Cars</a></li>
+        <li id="auth-nav"><a href="#" onclick="showAuth('login')">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header id="home" class="hero">
+    <div class="hero-content">
+      <h1>Chinese & American Autos × Automarin</h1>
+      <p class="subtitle">Multi-Stage Review Platform | Automarin - Μεταχειρισμένα Αυτοκίνητα Λ. Αλεξάνδρας</p>
+      <p>Complete progressive stages, leave reviews, and earn rewards. Admin approval required.</p>
+      <div class="cta-buttons">
+        <button class="btn-primary" onclick="document.getElementById('cars').scrollIntoView({behavior:'smooth'})">Browse Cars</button>
+        <button class="btn-secondary" onclick="showAuth('signup')">Register to Start</button>
+      </div>
+    </div>
+    <div class="hero-image"><img src="27giT.jpg" alt="Cars"></div>
+  </header>
+
+  <section id="stages" class="earn-section">
+    <div class="container">
+      <h2>Progressive Stages</h2>
+      <div class="steps">
+        <div class="step"><div class="step-icon">1</div><h3>Text Reviews</h3><p>30 reviews ($50)</p></div>
+        <div class="step"><div class="step-icon">2</div><h3>Star Ratings</h3><p>20 ratings ($100)</p></div>
+        <div class="step"><div class="step-icon">3</div><h3>Preferences</h3><p>Select favorites ($150)</p></div>
+        <div class="step"><div class="step-icon">4</div><h3>Buying Survey</h3><p>Questionnaire ($200)</p></div>
+        <div class="step"><div class="step-icon">5</div><h3>Verification</h3><p>Contact + wallet ($300)</p></div>
+        <div class="step"><div class="step-icon">6</div><h3>VIP Members</h3><p>Exclusive high rewards</p></div>
+      </div>
+      <div class="user-status" id="user-status" style="display:none;">
+        <h3>Your Current Stage: <span id="current-stage">1</span></h3>
+        <div class="progress-bar"><div class="progress" id="progress"></div></div>
+        <p id="progress-text">Loading...</p>
+        <p id="earnings-text"></p>
+        <button id="next-stage-btn" class="btn-primary" style="display:none;" onclick="advanceStage()">Complete Stage & Unlock Next</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="cars" class="cars-section">
+    <div class="container">
+      <h2>Featured Cars</h2>
+      <div class="car-grid" id="car-grid"></div>
+      <div style="text-align:center;margin-top:2rem;">
+        <button class="btn-secondary" id="load-more-btn" onclick="loadMoreCars()" style="display:none;">Load More Cars</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="auth-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('auth-modal')">&times;</span>
+      <div id="login-form">
+        <h2>Login</h2>
+        <input type="email" id="login-email" placeholder="Email or Username">
+        <input type="password" id="login-password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p>New? <a href="#" onclick="showAuth('signup')">Register</a></p>
+      </div>
+      <div id="signup-form" style="display:none;">
+        <h2>Register</h2>
+        <input type="text" id="signup-username" placeholder="Username">
+        <input type="text" id="signup-name" placeholder="Full Name">
+        <input type="email" id="signup-email" placeholder="Email">
+        <div style="display:flex;gap:8px;">
+          <select id="signup-country" style="width:160px;">
+            <option value="+30">Greece (+30)</option>
+            <option value="+233">Ghana (+233)</option>
+            <option value="+1">USA/Canada (+1)</option>
+            <option value="+44">UK (+44)</option>
+            <option value="+971">UAE (+971)</option>
+            <option value="+86">China (+86)</option>
+            <option value="+49">Germany (+49)</option>
+            <option value="+33">France (+33)</option>
+            <option value="+39">Italy (+39)</option>
+            <option value="+34">Spain (+34)</option>
+            <option value="+91">India (+91)</option>
+            <option value="+234">Nigeria (+234)</option>
+            <option value="+27">South Africa (+27)</option>
+            <option value="+61">Australia (+61)</option>
+            <option value="+81">Japan (+81)</option>
+            <option value="+82">South Korea (+82)</option>
+            <option value="+55">Brazil (+55)</option>
+            <option value="+52">Mexico (+52)</option>
+            <option value="+7">Russia (+7)</option>
+            <option value="+90">Turkey (+90)</option>
+          </select>
+          <input type="tel" id="signup-phone" placeholder="Phone Number" style="flex:1;">
+        </div>
+        <input type="password" id="signup-password" placeholder="Password">
+        <button onclick="signup()">Submit Registration</button>
+        <p style="font-size:0.85rem;color:#f59e0b;">Email verification + admin approval required.</p>
+        <p>Have account? <a href="#" onclick="showAuth('login')">Login</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="action-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('action-modal')">&times;</span>
+      <img id="action-car-img" src="" style="width:100%;height:180px;object-fit:cover;border-radius:8px;">
+      <h2 id="action-car-name"></h2>
+      <p id="action-car-details"></p>
+      <div id="stage1-ui">
+        <textarea id="review-text" placeholder="Write your review..." rows="3"></textarea>
+        <button onclick="submitReview()">Submit Review</button>
+      </div>
+      <div id="stage2-ui" style="display:none;">
+        <p>Rate this car (1-5):</p>
+        <input type="number" id="selected-stars" min="1" max="5" value="5">
+        <button onclick="submitRating()">Submit Rating</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="chat-btn" style="position:fixed;bottom:20px;right:20px;background:#3b82f6;color:white;border:none;border-radius:50%;width:70px;height:70px;font-size:20px;cursor:pointer;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.3);">💬</button>
+
+  <div id="chat-modal" class="modal">
+    <div class="modal-content" style="max-width:400px;height:480px;display:flex;flex-direction:column;">
+      <span class="close" onclick="closeModal('chat-modal')">&times;</span>
+      <h3>Customer Support</h3>
+      <div id="chat-messages" style="flex:1;overflow-y:auto;background:#0f172a;padding:10px;border-radius:8px;margin:10px 0;"></div>
+      <input id="chat-input" placeholder="Type a message...">
+      <input type="file" id="chat-file" accept="image/*,.pdf" style="margin:5px 0;font-size:0.85rem;">
+      <div style="display:flex;gap:5px;">
+        <button onclick="sendChat()" style="flex:1;">Send</button>
+        <button onclick="uploadChatFile()" style="flex:1;background:#10b981;">Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Automarin World Cars | Collaboration with Automarin Alexandras</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

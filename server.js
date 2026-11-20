@@ -194,29 +194,38 @@ function serveStatic(req, res) {
   if (cleanUrl === '/' || cleanUrl === '') cleanUrl = '/index.html';
   if (cleanUrl === '/admin' || cleanUrl === '/admin/') cleanUrl = '/admin.html';
 
-  let filePath = path.join(PUBLIC_DIR, cleanUrl);
+  const candidates = [
+    path.join(PUBLIC_DIR, cleanUrl),
+    path.join(__dirname, 'public', cleanUrl),
+    path.join(__dirname, cleanUrl.replace(/^\//, '')),
+    path.join(PUBLIC_DIR, 'index.html'),
+    path.join(__dirname, 'index.html')
+  ];
+
   if (cleanUrl.startsWith('/uploads/')) {
-    filePath = path.join(__dirname, cleanUrl);
-  }
-  if (!fs.existsSync(filePath)) {
-    filePath = path.join(__dirname, cleanUrl.replace(/^\//, ''));
+    candidates.unshift(path.join(__dirname, cleanUrl));
   }
 
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath).toLowerCase();
-    const types = {
-      '.html': 'text/html; charset=utf-8',
-      '.css': 'text/css',
-      '.js': 'application/javascript',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png'
-    };
-    res.writeHead(200, { 'Content-Type': types[ext] || 'application/octet-stream' });
-    fs.createReadStream(filePath).pipe(res);
-  } else {
-    res.writeHead(404); res.end('Not found');
+  for (const filePath of candidates) {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const ext = path.extname(filePath).toLowerCase();
+      const types = {
+        '.html': 'text/html; charset=utf-8',
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif'
+      };
+      res.writeHead(200, { 'Content-Type': types[ext] || 'application/octet-stream' });
+      fs.createReadStream(filePath).pipe(res);
+      return;
+    }
   }
+
+  console.log('404 for:', cleanUrl, 'tried:', candidates);
+  res.writeHead(404); res.end('Not found');
 }
 
 const server = http.createServer(async (req, res) => {

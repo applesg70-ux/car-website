@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - Automarin</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+    h1 { color: #3b82f6; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { padding: 8px; border: 1px solid #334155; text-align: left; font-size: 0.9rem; }
+    th { background: #1e293b; }
+    button { background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; margin: 2px; font-size: 0.85rem; }
+    button.danger { background: #ef4444; }
+    button.success { background: #10b981; }
+    .login-box { max-width: 380px; margin: 80px auto; background: #1e293b; padding: 25px; border-radius: 12px; }
+    input { width: 100%; padding: 10px; margin: 6px 0; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div id="login-section" class="login-box">
+    <h1>Admin Login</h1>
+    <input id="admin-user" placeholder="Username">
+    <input id="admin-pass" type="password" placeholder="Password">
+    <button onclick="adminLogin()">Login</button>
+  </div>
+
+  <div id="admin-panel" class="hidden">
+    <h1>Automarin Admin Panel</h1>
+    <button onclick="loadUsers()">Refresh Users</button>
+    <button onclick="loadAdminChat()">Live Chats</button>
+    <button onclick="toggleSupport()">Toggle Support Online</button>
+    <button onclick="changePassword()">Change Password</button>
+    <button onclick="logout()">Logout</button>
+
+    <h2>User Account Management</h2>
+    <div id="users-table"></div>
+
+    <h2>Live Support Chats</h2>
+    <div style="margin-bottom:10px;">
+      <input id="support-name-input" placeholder="Support name shown to users" value="Customer Support" style="width:280px;">
+      <button onclick="setSupportName()">Set Name</button>
+    </div>
+    <div id="admin-chat-list"></div>
+    <div id="chat-windows" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:15px;"></div>
+  </div>
+
+  <script>
+    let adminToken = null;
+    let openChats = {};
+
+    async function api(path, options = {}) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
+      const res = await fetch(path, { ...options, headers });
+      return res.json();
+    }
+
+    async function adminLogin() {
+      const data = await api('/api/admin/login', { method: 'POST', body: JSON.stringify({
+        username: document.getElementById('admin-user').value,
+        password: document.getElementById('admin-pass').value
+      })});
+      if (data.token) {
+        adminToken = data.token;
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
+        loadUsers();
+      } else alert(data.error || 'Login failed');
+    }
+
+    async function loadUsers() {
+      const data = await api('/api/admin/users');
+      const users = data.users || [];
+      let html = '<table><tr><th>Name</th><th>Email</th><th>Phone</th><th>Approved</th><th>Verified</th><th>Restricted</th><th>Stage</th><th>Actions</th></tr>';
+      users.forEach(u => {
+        html += `<tr>
+          <td>${u.name || u.username}</td>
+          <td>${u.email}</td>
+          <td>${u.phone || '-'}</td>
+          <td>${u.approved ? 'Yes' : 'No'}</td>
+          <td>${u.emailVerified ? 'Yes' : 'No'}</td>
+          <td>${u.restricted ? '<span style="color:#ef4444">Yes</span>' : 'No'}</td>
+          <td>${u.stage}</td>
+          <td>
+            <button class="success" onclick="approve('${u.id}', true)">Approve</button>
+            <button class="danger" onclick="approve('${u.id}', false)">Reject</button>
+            <button onclick="verifyEmail('${u.id}')">Verify Email</button>
+            <button onclick="restrict('${u.id}', true)">Restrict</button>
+            <button onclick="restrict('${u.id}', false)">Unrestrict</button>
+            <button class="danger" onclick="banDelete('${u.id}')">Ban & Delete</button>
+          </td>
+        </tr>`;
+      });
+      html += '</table>';
+      document.getElementById('users-table').innerHTML = html;
+    }
+
+    async function approve(id, approved) {
+      await api('/api/admin/user', { method: 'PUT', body: JSON.stringify({ id, approved }) });
+      loadUsers();
+    }
+
+    async function verifyEmail(id) {
+      await api('/api/admin/verify-email', { method: 'POST', body: JSON.stringify({ userId: id }) });
+      alert('Email verified');
+      loadUsers();
+    }
+
+    async function restrict(id, restricted) {
+      const message = restricted ? prompt('Message for user:', 'Your account has been Restricted. Contact customer support.') : '';
+      await api('/api/admin/restrict', { method: 'POST', body: JSON.stringify({ userId: id, restricted, message }) });
+      loadUsers();
+    }
+
+    async function banDelete(id) {
+      if (!confirm('Permanently ban and delete this user?')) return;
+      await api('/api/admin/ban-delete', { method: 'POST', body: JSON.stringify({ userId: id }) });
+      alert('User deleted');
+      loadUsers();
+    }
+
+    async function setSupportName() {
+      const name = document.getElementById('support-name-input').value.trim();
+      if (name) await api('/api/admin/set-support-name', { method: 'POST', body: JSON.stringify({ name }) });
+      alert('Support name updated');
+    }
+
+    async function loadAdminChat() {
+      const data = await api('/api/admin/chat/messages');
+      const msgs = data.messages || [];
+      const byUser = {};
+      msgs.forEach(m => { if (!byUser[m.userId]) byUser[m.userId] = m; });
+      let html = '<table><tr><th>User</th><th>Last Message</th><th></th></tr>';
+      Object.keys(byUser).forEach(uid => {
+        const m = byUser[uid];
+        html += `<tr><td>${m.userName || 'User'}</td><td>${(m.message||'').substring(0,40)}</td><td><button onclick="openChat('${uid}', '${(m.userName||'User').replace(/'/g,'')}')">Reply</button></td></tr>`;
+      });
+      html += '</table>';
+      document.getElementById('admin-chat-list').innerHTML = html;
+    }
+
+    function openChat(userId, userName) {
+      if (openChats[userId]) return;
+      const win = document.createElement('div');
+      win.id = 'chat-' + userId;
+      win.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:8px;width:300px;height:380px;display:flex;flex-direction:column;padding:10px;';
+      win.innerHTML = `<div style="display:flex;justify-content:space-between;"><strong>${userName}</strong><button onclick="this.parentElement.parentElement.remove();delete openChats['${userId}']">✕</button></div>
+        <div id="msgs-${userId}" style="flex:1;overflow-y:auto;background:#0f172a;margin:8px 0;padding:6px;border-radius:6px;font-size:0.85rem;"></div>
+        <input id="in-${userId}" placeholder="Reply..."><button onclick="sendReply('${userId}')">Send</button>`;
+      document.getElementById('chat-windows').appendChild(win);
+      openChats[userId] = true;
+      refreshChat(userId);
+    }
+
+    async function refreshChat(userId) {
+      const data = await api('/api/admin/chat/messages');
+      const msgs = (data.messages || []).filter(m => m.userId === userId).reverse();
+      const box = document.getElementById('msgs-' + userId);
+      if (!box) return;
+      box.innerHTML = msgs.map(m => `<div style="text-align:${m.from==='admin'?'right':'left'};margin:4px 0;"><span style="background:${m.from==='admin'?'#3b82f6':m.from==='system'?'#f59e0b':'#334155'};padding:4px 8px;border-radius:6px;display:inline-block;">${m.message}</span></div>`).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendReply(userId) {
+      const input = document.getElementById('in-' + userId);
+      const message = input.value.trim();
+      if (!message) return;
+      const supportName = document.getElementById('support-name-input').value.trim() || 'Customer Support';
+      await api('/api/admin/chat/reply', { method: 'POST', body: JSON.stringify({ userId, message, supportName }) });
+      input.value = '';
+      refreshChat(userId);
+    }
+
+    setInterval(() => Object.keys(openChats).forEach(refreshChat), 3000);
+
+    async function toggleSupport() {
+      const data = await api('/api/admin/toggle-support', { method: 'POST' });
+      alert('Support is now ' + (data.online ? 'ONLINE' : 'OFFLINE'));
+    }
+
+    async function changePassword() {
+      const p = prompt('New admin password (min 6 chars):');
+      if (p && p.length >= 6) {
+        await api('/api/admin/change-password', { method: 'POST', body: JSON.stringify({ newPassword: p }) });
+        alert('Password changed');
+      }
+    }
+
+    function logout() {
+      adminToken = null;
+      document.getElementById('login-section').classList.remove('hidden');
+      document.getElementById('admin-panel').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
