@@ -40,9 +40,8 @@ function loadDB() {
     if (fs.existsSync(DATA_FILE)) {
       const loaded = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
       db = { ...db, ...loaded };
-    }
-    // Always ensure cars exist with valid images
-    if (!db.cars || db.cars.length === 0 || !db.cars[0].image.startsWith('http')) {
+      if (!db.cars || db.cars.length === 0) initializeCars();
+    } else {
       initializeCars();
       saveDB();
     }
@@ -58,16 +57,9 @@ function saveDB() {
 
 function initializeCars() {
   const images = [
-    'https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=800',
-    'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800',
-    'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800',
-    'https://images.unsplash.com/photo-1555215695-3004980adade?w=800',
-    'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800',
-    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800',
-    'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800',
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800',
-    'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800',
-    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800'
+    'Zakxj.jpg', 'HWsda.jpg', 'jdS38.jpg', 'iV2S4.jpg', '5dGGO.jpg',
+    'ev7Cp.jpg', '0kA1b.jpg', 'EoVb4.jpg', 'yznGq.jpg', 'DpNpd.jpg',
+    '5B6BJ.jpg', 'rBeHp.jpg', '2oLZy.jpg', '27giT.jpg'
   ];
   const chineseModels = [
     'BYD Atto 3', 'BYD Seal', 'BYD Sealion 7', 'BYD Tang', 'MG ZS EV', 'MG4 EV',
@@ -77,7 +69,6 @@ function initializeCars() {
     'Ford Mustang Mach-E', 'Tesla Model 3', 'Tesla Model Y', 'Jeep Wrangler 4xe',
     'Chevrolet Equinox EV', 'Ford F-150 Lightning'
   ];
-  db.cars = [];
   let id = 1;
   chineseModels.forEach((name, i) => {
     db.cars.push({
@@ -91,13 +82,13 @@ function initializeCars() {
   americanModels.forEach((name, i) => {
     db.cars.push({
       id: id++, name, type: 'american',
-      image: images[(i + 3) % images.length],
+      image: images[(i + 5) % images.length],
       price: `€${(35000 + Math.floor(Math.random() * 25000)).toLocaleString()}`,
       details: 'Iconic American performance & EV | Automarin collaboration',
       year: 2023 + (i % 3)
     });
   });
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 15; i++) {
     db.cars.push({
       id: id++,
       name: i % 2 === 0 ? `Chinese Model ${i+1}` : `American Model ${i+1}`,
@@ -115,7 +106,7 @@ const STAGES = {
   2: { name: 'Star Ratings', required: 20, reward: 100 },
   3: { name: 'Preferences', required: 15, reward: 150 },
   4: { name: 'Buying Intent Survey', required: 1, reward: 200 },
-  5: { name: 'Final Verification', required: 1, reward: 50 },
+  5: { name: 'Final Verification', required: 1, reward: 300 },
   6: { name: 'VIP Members', required: 1, reward: null }
 };
 
@@ -203,38 +194,29 @@ function serveStatic(req, res) {
   if (cleanUrl === '/' || cleanUrl === '') cleanUrl = '/index.html';
   if (cleanUrl === '/admin' || cleanUrl === '/admin/') cleanUrl = '/admin.html';
 
-  const candidates = [
-    path.join(PUBLIC_DIR, cleanUrl),
-    path.join(__dirname, 'public', cleanUrl),
-    path.join(__dirname, cleanUrl.replace(/^\//, '')),
-    path.join(PUBLIC_DIR, 'index.html'),
-    path.join(__dirname, 'index.html')
-  ];
-
+  let filePath = path.join(PUBLIC_DIR, cleanUrl);
   if (cleanUrl.startsWith('/uploads/')) {
-    candidates.unshift(path.join(__dirname, cleanUrl));
+    filePath = path.join(__dirname, cleanUrl);
+  }
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(__dirname, cleanUrl.replace(/^\//, ''));
   }
 
-  for (const filePath of candidates) {
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      const ext = path.extname(filePath).toLowerCase();
-      const types = {
-        '.html': 'text/html; charset=utf-8',
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.gif': 'image/gif'
-      };
-      res.writeHead(200, { 'Content-Type': types[ext] || 'application/octet-stream' });
-      fs.createReadStream(filePath).pipe(res);
-      return;
-    }
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const ext = path.extname(filePath).toLowerCase();
+    const types = {
+      '.html': 'text/html; charset=utf-8',
+      '.css': 'text/css',
+      '.js': 'application/javascript',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png'
+    };
+    res.writeHead(200, { 'Content-Type': types[ext] || 'application/octet-stream' });
+    fs.createReadStream(filePath).pipe(res);
+  } else {
+    res.writeHead(404); res.end('Not found');
   }
-
-  console.log('404 for:', cleanUrl, 'tried:', candidates);
-  res.writeHead(404); res.end('Not found');
 }
 
 const server = http.createServer(async (req, res) => {
