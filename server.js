@@ -115,7 +115,7 @@ const STAGES = {
   2: { name: 'Star Ratings', required: 20, reward: 100 },
   3: { name: 'Preferences', required: 15, reward: 150 },
   4: { name: 'Buying Intent Survey', required: 1, reward: 200 },
-  5: { name: 'Final Verification', required: 1, reward: 300 },
+  5: { name: 'Final Verification', required: 1, reward: 50 },
   6: { name: 'VIP Members', required: 1, reward: null }
 };
 
