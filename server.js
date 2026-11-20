@@ -40,8 +40,9 @@ function loadDB() {
     if (fs.existsSync(DATA_FILE)) {
       const loaded = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
       db = { ...db, ...loaded };
-      if (!db.cars || db.cars.length === 0) initializeCars();
-    } else {
+    }
+    // Always ensure cars exist with valid images
+    if (!db.cars || db.cars.length === 0 || !db.cars[0].image.startsWith('http')) {
       initializeCars();
       saveDB();
     }
@@ -57,9 +58,16 @@ function saveDB() {
 
 function initializeCars() {
   const images = [
-    'Zakxj.jpg', 'HWsda.jpg', 'jdS38.jpg', 'iV2S4.jpg', '5dGGO.jpg',
-    'ev7Cp.jpg', '0kA1b.jpg', 'EoVb4.jpg', 'yznGq.jpg', 'DpNpd.jpg',
-    '5B6BJ.jpg', 'rBeHp.jpg', '2oLZy.jpg', '27giT.jpg'
+    'https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=800',
+    'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800',
+    'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800',
+    'https://images.unsplash.com/photo-1555215695-3004980adade?w=800',
+    'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800',
+    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800',
+    'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800',
+    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800',
+    'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800',
+    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800'
   ];
   const chineseModels = [
     'BYD Atto 3', 'BYD Seal', 'BYD Sealion 7', 'BYD Tang', 'MG ZS EV', 'MG4 EV',
@@ -69,6 +77,7 @@ function initializeCars() {
     'Ford Mustang Mach-E', 'Tesla Model 3', 'Tesla Model Y', 'Jeep Wrangler 4xe',
     'Chevrolet Equinox EV', 'Ford F-150 Lightning'
   ];
+  db.cars = [];
   let id = 1;
   chineseModels.forEach((name, i) => {
     db.cars.push({
@@ -82,13 +91,13 @@ function initializeCars() {
   americanModels.forEach((name, i) => {
     db.cars.push({
       id: id++, name, type: 'american',
-      image: images[(i + 5) % images.length],
+      image: images[(i + 3) % images.length],
       price: `€${(35000 + Math.floor(Math.random() * 25000)).toLocaleString()}`,
       details: 'Iconic American performance & EV | Automarin collaboration',
       year: 2023 + (i % 3)
     });
   });
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 12; i++) {
     db.cars.push({
       id: id++,
       name: i % 2 === 0 ? `Chinese Model ${i+1}` : `American Model ${i+1}`,
